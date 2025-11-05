@@ -1,0 +1,59 @@
+# Default configuration for the MQTT Security Tester
+
+[broker]
+# Target MQTT broker host or IP address
+host = "localhost"
+# Target MQTT broker port (1883 for unencrypted, 8883 for TLS)
+port = 1883
+# Use TLS/SSL for connection (true/false)
+use_tls = false
+# Path to CA certificate file for TLS (optional)
+ca_certs = ""
+# Path to client certificate file for TLS (optional)
+client_cert = ""
+# Path to client key file for TLS (optional)
+client_key = ""
+# MQTT protocol version (3.1, 3.1.1, 5)
+protocol_version = "3.1.1"
+# Connection timeout in seconds
+timeout = 5
+
+[credentials]
+# Default username for testing (if not specified via CLI)
+username = ""
+# Default password for testing (if not specified via CLI)
+password = ""
+# List of common weak usernames to test for authentication bypass
+weak_usernames = ["admin", "user", "test", "root", "guest"]
+# List of common weak passwords to test for authentication bypass
+weak_passwords = ["admin", "password", "123456", "test", "guest"]
+
+[topics]
+# Topics to test for authorization bypass (e.g., sensitive data topics)
+auth_test_topics = ["#", "/sensitive/data", "/commands/+/control"]
+# Topics to publish to for testing (e.g., to see if unauthorized publishes are allowed)
+publish_test_topic = "/test/security_tester/publish"
+# Topics to subscribe to for testing (e.g., to see if unauthorized subscriptions are allowed)
+subscribe_test_topic = "/test/security_tester/subscribe"
+# Topic to publish a retained message to for testing
+retained_test_topic = "/test/security_tester/retained"
+# Topic for Last Will and Testament (LWT) testing
+lwt_test_topic = "/test/security_tester/lwt"
+
+[scan_options]
+# Enable/disable anonymous access test
+test_anonymous_access = true
+# Enable/disable weak credentials test
+test_weak_credentials = true
+# Enable/disable authorization bypass test
+test_authorization_bypass = true
+# Enable/disable topic enumeration test (subscribes to #)
+test_topic_enumeration = true
+# Enable/disable retained message test
+test_retained_messages = true
+# Enable/disable Last Will and Testament (LWT) test
+test_lwt = true
+# Enable/disable TLS/SSL configuration check
+test_tls_config = true
+# Output directory for reports
+report_output_dir = "reports"
