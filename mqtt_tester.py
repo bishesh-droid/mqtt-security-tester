@@ -2,7 +2,7 @@ import argparse
 import sys
 import logging
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from mqtt_security_tester.config import Config
 from mqtt_security_tester.mqtt_client_wrapper import MQTTClientWrapper
@@ -80,6 +80,8 @@ def main():
     try:
         config = Config()
         # Override default logging file to be in the project root
+        if "logging" not in config._config_data:
+            config._config_data["logging"] = {}
         config._config_data["logging"]["file"] = "mqtt_security_tester.log"
         setup_logging(config)
     except Exception as e:
@@ -150,35 +152,36 @@ def main():
 
     args = parser.parse_args()
 
-    # Override config values if provided via CLI
-    if args.host: config._config_data["broker"]["host"] = args.host
-    if args.port: config._config_data["broker"]["port"] = args.port
-    if args.username: config._config_data["credentials"]["username"] = args.username
-    if args.password: config._config_data["credentials"]["password"] = args.password
-
-    # Determine which tests to run based on CLI arguments
-    run_all_tests = not any([
-        args.anon, args.weak_creds, args.custom_creds, args.custom_creds_file,
-        args.bruteforce_users, args.bruteforce_passwords, args.authz,
-        args.topic_enum, args.retained, args.lwt, args.tls
-    ])
-
-    scanner = VulnerabilityScanner(config)
-    recon = BrokerRecon(config)
-    reporter = Reporter(config)
-
-    broker_info = {
-        "host": config.get("broker.host"),
-        "port": config.get("broker.port"),
-        "tls_enabled_in_config": config.get("broker.use_tls"),
-        "port_open": recon.check_port_open(config.get("broker.port"))
-    }
-
     if args.command == "scan":
-        logger.info(f"Starting MQTT security scan for {broker_info["host"]}:{broker_info["port"]}")
+        # Override config values if provided via CLI
+        if 'host' in args and args.host: config._config_data["broker"]["host"] = args.host
+        if 'port' in args and args.port: config._config_data["broker"]["port"] = args.port
+        if 'username' in args and args.username: config._config_data["credentials"]["username"] = args.username
+        if 'password' in args and args.password: config._config_data["credentials"]["password"] = args.password
+
+        # Determine which tests to run based on CLI arguments
+        run_all_tests = not any([
+            'anon' in args and args.anon, 'weak_creds' in args and args.weak_creds,
+            'custom_creds' in args and args.custom_creds, 'custom_creds_file' in args and args.custom_creds_file,
+            'bruteforce_users' in args and args.bruteforce_users, 'bruteforce_passwords' in args and args.bruteforce_passwords,
+            'authz' in args and args.authz, 'topic_enum' in args and args.topic_enum,
+            'retained' in args and args.retained, 'lwt' in args and args.lwt, 'tls' in args and args.tls
+        ])
+
+        scanner = VulnerabilityScanner(config)
+        recon = BrokerRecon(config)
+        reporter = Reporter(config)
+
+        broker_info = {
+            "host": config.get("broker.host"),
+            "port": config.get("broker.port"),
+            "tls_enabled_in_config": config.get("broker.use_tls"),
+            "port_open": recon.check_port_open(config.get("broker.port"))
+        }
+        logger.info(f"Starting MQTT security scan for {broker_info['host']}:{broker_info['port']}")
 
         # Run broker reconnaissance first
-        if config.get("broker.use_tls") or args.tls or run_all_tests:
+        if config.get("broker.use_tls") or ('tls' in args and args.tls) or run_all_tests:
             tls_info = recon.get_tls_info()
             broker_info["tls_info"] = tls_info
             if tls_info.get("error"):
@@ -211,41 +214,41 @@ def main():
                 )
 
         # Determine credentials to use for tests that require them
-        test_username = args.username if args.username is not None else config.get("credentials.username")
-        test_password = args.password if args.password is not None else config.get("credentials.password")
+        test_username = args.username if 'username' in args and args.username is not None else config.get("credentials.username")
+        test_password = args.password if 'password' in args and args.password is not None else config.get("credentials.password")
 
         if run_all_tests:
             scanner.run_all_scans(username=test_username, password=test_password)
         else:
-            if args.anon: scanner.test_anonymous_access()
-            if args.weak_creds: scanner.test_weak_credentials()
-            if args.custom_creds:
+            if 'anon' in args and args.anon: scanner.test_anonymous_access()
+            if 'weak_creds' in args and args.weak_creds: scanner.test_weak_credentials()
+            if 'custom_creds' in args and args.custom_creds:
                 if ':' in args.custom_creds:
                     user, passwd = args.custom_creds.split(':', 1)
                     scanner.test_custom_credentials(user, passwd)
                 else:
                     logger.error("Invalid format for --custom-creds. Use username:password.")
-            if args.custom_creds_file:
+            if 'custom_creds_file' in args and args.custom_creds_file:
                 creds_list = read_credentials_from_file(args.custom_creds_file)
                 for user, passwd in creds_list:
                     scanner.test_custom_credentials(user, passwd)
-            if args.bruteforce_users and args.bruteforce_passwords:
+            if 'bruteforce_users' in args and args.bruteforce_users and 'bruteforce_passwords' in args and args.bruteforce_passwords:
                 user_list = read_list_from_file(args.bruteforce_users)
                 pass_list = read_list_from_file(args.bruteforce_passwords)
                 if user_list and pass_list:
                     scanner.test_bruteforce_credentials(user_list, pass_list)
-            elif args.bruteforce_users or args.bruteforce_passwords:
+            elif 'bruteforce_users' in args and args.bruteforce_users or 'bruteforce_passwords' in args and args.bruteforce_passwords:
                 logger.error("Both --bruteforce-users and --bruteforce-passwords must be provided for bruteforce test.")
 
-            if args.authz: scanner.test_authorization_bypass(username=test_username, password=test_password)
-            if args.topic_enum: scanner.test_topic_enumeration(username=test_username, password=test_password)
-            if args.retained: scanner.test_retained_messages(username=test_username, password=test_password)
-            if args.lwt: scanner.test_lwt_abuse(username=test_username, password=test_password)
+            if 'authz' in args and args.authz: scanner.test_authorization_bypass(username=test_username, password=test_password)
+            if 'topic_enum' in args and args.topic_enum: scanner.test_topic_enumeration(username=test_username, password=test_password)
+            if 'retained' in args and args.retained: scanner.test_retained_messages(username=test_username, password=test_password)
+            if 'lwt' in args and args.lwt: scanner.test_lwt_abuse(username=test_username, password=test_password)
             # TLS check is handled above as part of recon
 
         # Generate and save report
         scan_results = scanner.get_results()
-        if args.report_format == "json":
+        if 'report_format' in args and args.report_format == "json":
             report_content = reporter.generate_json_report(scan_results, broker_info)
         else:
             report_content = reporter.generate_text_report(scan_results, broker_info)
