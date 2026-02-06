@@ -1,6 +1,6 @@
 import unittest
 import os
-from mqtt_security_tester.main import test_anonymous_connection
+from mqtt_security_tester.main import test_anonymous_connection as _mqtt_anonymous_connection
 
 class TestOutput(unittest.TestCase):
 
@@ -12,7 +12,7 @@ class TestOutput(unittest.TestCase):
         if os.path.exists(output_file):
             os.remove(output_file)
 
-        test_anonymous_connection(broker, output_file)
+        _mqtt_anonymous_connection(broker, output_file)
 
         self.assertTrue(os.path.exists(output_file))
 

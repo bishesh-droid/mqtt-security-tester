@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch, call
-from mqtt_security_tester.main import test_topic_enumeration
+from mqtt_security_tester.main import test_topic_enumeration as _mqtt_topic_enumeration
 
 class TestTopicEnumeration(unittest.TestCase):
 
     @patch('mqtt_security_tester.main.mqtt.Client')
     def test_topic_enumeration(self, mock_client):
         broker = "test.mosquitto.org"
-        test_topic_enumeration(broker, None)
+        _mqtt_topic_enumeration(broker, None)
 
         instance = mock_client.return_value
         self.assertEqual(instance.subscribe.call_count, 4)

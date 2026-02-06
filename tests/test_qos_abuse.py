@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch, call
-from mqtt_security_tester.main import test_qos_abuse
+from mqtt_security_tester.main import test_qos_abuse as _mqtt_qos_abuse
 
 class TestQosAbuse(unittest.TestCase):
 
     @patch('mqtt_security_tester.main.mqtt.Client')
     def test_qos_abuse(self, mock_client):
         broker = "test.mosquitto.org"
-        test_qos_abuse(broker, None)
+        _mqtt_qos_abuse(broker, None)
 
         instance = mock_client.return_value
         instance.connect.assert_called_once_with(broker, 1883, 60)

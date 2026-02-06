@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch, call
-from mqtt_security_tester.main import test_default_credentials
+from mqtt_security_tester.main import test_default_credentials as _mqtt_default_credentials
 
 class TestDefaultCredentials(unittest.TestCase):
 
     @patch('mqtt_security_tester.main.mqtt.Client')
     def test_default_credentials(self, mock_client):
         broker = "test.mosquitto.org"
-        test_default_credentials(broker, None)
+        _mqtt_default_credentials(broker, None)
 
         instance = mock_client.return_value
         self.assertEqual(instance.username_pw_set.call_count, 3)

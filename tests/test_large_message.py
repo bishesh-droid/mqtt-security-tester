@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch, call
-from mqtt_security_tester.main import test_large_message
+from mqtt_security_tester.main import test_large_message as _mqtt_large_message
 
 class TestLargeMessage(unittest.TestCase):
 
     @patch('mqtt_security_tester.main.mqtt.Client')
     def test_large_message(self, mock_client):
         broker = "test.mosquitto.org"
-        test_large_message(broker, None)
+        _mqtt_large_message(broker, None)
 
         instance = mock_client.return_value
         instance.connect.assert_called_once_with(broker, 1883, 60)
